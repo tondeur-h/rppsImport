@@ -106,7 +106,9 @@ String ligne;
         lire_properties();
         
         db=new DataBase(DBdriver);
-        db.connect_db(DBconnect, DBlogin, DBmdp);
+        if (db==null){System.exit(1);}
+        
+        if (db.connect_db(DBconnect, DBlogin, DBmdp)==false){System.out.println("Connection DB impossible!!!");System.exit(2);}
         
         YesNo();
         

@@ -63,10 +63,12 @@ String ligne;
 
     DataBase db;
     long compteur=0;
+    long compteurErr=0;
     private String DBdriver;
     private String DBlogin;
     private String DBmdp;
     private String DBconnect;
+    private long debut;
     
     
     /**
@@ -119,22 +121,31 @@ String ligne;
         
         System.out.println("DEBUT INTEGRATION...");
         try {
+            debut=System.currentTimeMillis();
             //Reader in = new FileReader("C:\\Users\\tondeur-h\\Downloads\\ExtractionMonoTable_CAT18_ToutePopulation_201707030951/ExtractionMonoTable_CAT18_ToutePopulation_201707030751.csv");
           
             InputStreamReader in=new InputStreamReader(new FileInputStream(fileDir), "UTF8");
             BufferedReader bf=new BufferedReader(in);
            
+            db.prepareBatch();
+            
            while (bf.ready()){
            ligne=bf.readLine();
            parseLine(ligne);
            compteur++;
                //System.out.println(compteur);
-           if ((compteur % 1000)==0){
-               System.out.println("#"+compteur +" lignes");
+           if ((compteur % 10000)==0){
+               db.batchExec();
+               System.out.println("#"+compteur +" lignes traitées");
            }
            }
+           //avant de quitter un dernier commit
+           db.batchExec();
             System.out.println("Fin de l'intégration...");
-            System.out.println("Nombre de lignes : "+ compteur);
+            System.out.println("Nombre de lignes traitées : "+ compteur);
+            System.out.println("Nombre de lignes en erreur : "+compteurErr);
+            System.out.println("Nombre de lignes intégrées : "+(compteur-compteurErr));
+            System.out.println("Durée: "+(System.currentTimeMillis()-debut)/1000+" secondes");
                    } catch (IOException ex) {
             Logger.getLogger(RppsImport.class.getName()).log(Level.SEVERE, null, ex);
         }
@@ -189,7 +200,7 @@ Telecopie=sc.next().replaceAll("\"", "").replaceAll("'", "''");
 Adresse_e_mail=sc.next().replaceAll("\"", "").replaceAll("'", "''");
 Adresse_BAL_MSSante=sc.next().replaceAll("\"", "").replaceAll("'", "''");
 insert_db();
-} catch (Exception e){System.out.println("erreur a la ligne : "+compteur);}    
+} catch (Exception e){System.out.println("erreur a la ligne : "+compteur);compteurErr++;}    
 }
     }
     
@@ -290,11 +301,11 @@ insert_db();
 "'"+Telecopie+"',\n" +
 "'"+Adresse_e_mail+"',\n" +
 "'"+Adresse_BAL_MSSante+"')";
-       db.update(sql);
+       db.updateBatch(sql);
     }
 
     private void YesNo() {
-        System.out.print("L'application va réaliser un truncate de la table RSS, voulez vous continuer (o/n)? ");
+        System.out.print("L'application va réaliser un truncate de la table RPPS, voulez vous continuer (o/n)? ");
         Scanner sc=new Scanner(System.in);
         String reponse=sc.nextLine();
         if (reponse.compareToIgnoreCase("n")==0){

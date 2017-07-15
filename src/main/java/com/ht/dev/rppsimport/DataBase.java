@@ -110,7 +110,35 @@ public class DataBase {
         return -1;
     }
 
- 
+/******************
+ * Batching Update
+ *****************/ 
+    public void prepareBatch(){
+        try {
+            connexion.setAutoCommit(false);
+            stat=connexion.createStatement();
+        } catch (SQLException ex) {
+            Logger.getLogger(DataBase.class.getName()).log(Level.SEVERE, null, ex);
+        }
+    }
+    
+    public void updateBatch(String sql){
+        try {
+            stat.addBatch(sql);
+        } catch (SQLException ex) {
+            Logger.getLogger(DataBase.class.getName()).log(Level.SEVERE, null, ex);
+        }
+    }
+    
+    public void batchExec (){
+        try {
+            stat.executeLargeBatch();
+            connexion.commit();
+        } catch (SQLException ex) {
+            Logger.getLogger(DataBase.class.getName()).log(Level.SEVERE, null, ex);
+        }
+    }
+    
     /**
      * *************************************
      * retourne le resulset courant ou null

@@ -69,7 +69,7 @@ String ligne;
     private String DBconnect;
     private long debut;
     
-     int MAXSIZE=10;
+     int MAXSIZE=1000;
       String fichierDir;
     
     /**
@@ -111,9 +111,9 @@ String ligne;
        
           if (argument.length>=2){
         try{
-            MAXSIZE=Integer.parseInt(argument[1].trim(),10); System.out.println("Batch_Size= "+MAXSIZE);
+            MAXSIZE=Integer.parseInt(argument[1].trim(),10);
         }
-        catch (NumberFormatException e){e.printStackTrace();MAXSIZE=1000;}
+        catch (NumberFormatException e){MAXSIZE=1000;}
          }
          
           

@@ -1,1 +1,1 @@
-java -jar rppsImport-1.0-jar-with-dependencies.jar %1
+java -jar rppsImport-1.0-jar-with-dependencies.jar %1 %2

@@ -69,7 +69,7 @@ String ligne;
     private String DBconnect;
     private long debut;
     
-     int MAXSIZE=1000;
+     int MAXSIZE=500;
       String fichierDir;
     
     /**
@@ -113,7 +113,7 @@ String ligne;
         try{
             MAXSIZE=Integer.parseInt(argument[1].trim(),10);
         }
-        catch (NumberFormatException e){MAXSIZE=1000;}
+        catch (NumberFormatException e){MAXSIZE=500;}
          }
          
           
@@ -240,7 +240,7 @@ insert_db();
             System.out.println("'fichier_import_csv' à récuperer sur le site :");
             System.out.println("https://annuaire.sante.fr/web/site-pro/extractions-publiques");
             System.out.println("NB: Ne pas modifier le format du fichier...");
-            System.out.println("Batch_size= [optionnel] nb update par transaction/commit valeur par defaut 1000");
+            System.out.println("Batch_size= [optionnel] nb update par transaction/commit valeur par defaut 500");
             System.exit(0);
     }
     

@@ -118,7 +118,7 @@ public class DataBase {
             connexion.setAutoCommit(false);
             stat=connexion.createStatement();
         } catch (SQLException ex) {
-            Logger.getLogger(DataBase.class.getName()).log(Level.SEVERE, null, ex);
+            logger.log(Level.SEVERE, null, ex);
         }
     }
     
@@ -126,17 +126,20 @@ public class DataBase {
         try {
             stat.addBatch(sql);
         } catch (SQLException ex) {
-            Logger.getLogger(DataBase.class.getName()).log(Level.SEVERE, null, ex);
+            logger.log(Level.SEVERE, null, ex);
         }
     }
     
-    public void batchExec (){
+    public long[] batchExec (int size){
+        long[] rep=new long[size];
+        
         try {
-            stat.executeLargeBatch();
+            rep=stat.executeLargeBatch();
             connexion.commit();
         } catch (SQLException ex) {
-            Logger.getLogger(DataBase.class.getName()).log(Level.SEVERE, null, ex);
+            logger.log(Level.SEVERE, null, ex);
         }
+        return rep;
     }
     
     /**

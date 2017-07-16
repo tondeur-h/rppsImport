@@ -28,7 +28,6 @@ String ligne;
     private String Libelle_profession;
     private String Code_categorie_professionnelle;
     private String Libelle_categorie_professionnelle;
-    private String Code_savoir;
     private String Adresse_BAL_MSSante;
     private String Adresse_e_mail;
     private String Telecopie;
@@ -55,7 +54,6 @@ String ligne;
     private String Numero_FINESS_site;
     private String Numero_SIREN_site;
     private String Numero_SIRET_site;
-    private String Libelle_type_savoir;
     private String Code_savoir_faire;
     private String Libelle_savoir_faire;
     private String Code_type_savoir_faire;
@@ -64,12 +62,15 @@ String ligne;
     DataBase db;
     long compteur=0;
     long compteurErr=0;
+    long sum=0;
     private String DBdriver;
     private String DBlogin;
     private String DBmdp;
     private String DBconnect;
     private long debut;
     
+     int MAXSIZE=1000;
+      String fichierDir;
     
     /**
      * **********************************************
@@ -103,15 +104,35 @@ String ligne;
     }
 
     
-    public RppsImport(String fileDir) {
+    public RppsImport(String[] argument) {
+        
+        //controler les arguments
+          if (argument.length<1){help();}
+       
+          if (argument.length>=2){
+        try{
+            MAXSIZE=Integer.parseInt(argument[1],10);
+        }
+        catch (NumberFormatException e){MAXSIZE=1000;}
+         }
+         
+          
+        fichierDir=argument[0];
+        
+        System.out.println("Batch_Size= "+MAXSIZE);
+        System.out.println("File_CSV= "+fichierDir);
+        
         //lire le fichier de paramètrage
         lire_properties();
         
+        //ouverture database
         db=new DataBase(DBdriver);
-        if (db==null){System.exit(1);}
+        if (db==null){System.exit(1);} //arreter si impossible...
         
+        //connexion database, stop si impossible... avec un message explicite
         if (db.connect_db(DBconnect, DBlogin, DBmdp)==false){System.out.println("Connection DB impossible!!!");System.exit(2);}
         
+        //valider le truncate de la table...
         YesNo();
         
         //truncate de la table avant de commencer
@@ -119,31 +140,40 @@ String ligne;
         db.update(sql);
         System.out.println("Truncate table OK");
         
+        //debut de la proc d'intégration
         System.out.println("DEBUT INTEGRATION...");
         try {
             debut=System.currentTimeMillis();
-            //Reader in = new FileReader("C:\\Users\\tondeur-h\\Downloads\\ExtractionMonoTable_CAT18_ToutePopulation_201707030951/ExtractionMonoTable_CAT18_ToutePopulation_201707030751.csv");
           
-            InputStreamReader in=new InputStreamReader(new FileInputStream(fileDir), "UTF8");
+            InputStreamReader in=new InputStreamReader(new FileInputStream(fichierDir), "UTF8");
             BufferedReader bf=new BufferedReader(in);
            
+            //autocomit=off & statement OK
             db.prepareBatch();
             
-           while (bf.ready()){
-           ligne=bf.readLine();
-           parseLine(ligne);
-           compteur++;
-               //System.out.println(compteur);
-           if ((compteur % 10000)==0){
-               db.batchExec();
-               System.out.println("#"+compteur +" lignes traitées");
+           //boucle d'intégration
+           while (bf.ready())
+           {
+                ligne=bf.readLine();
+                parseLine(ligne);
+                compteur++;
+              
+                
+                if ((compteur % MAXSIZE)==0)
+                {
+                    long[] rep=db.batchExec(MAXSIZE); //Insert et commit...
+                    for (int i=0;i<MAXSIZE;i++){sum=sum+rep[i];}
+                    
+                    System.out.println("#"+compteur +" lignes traitées.");
+                    System.out.println("@"+sum+" lignes intégrées.");
+                }
            }
-           }
-           //avant de quitter un dernier commit
-           db.batchExec();
+           
+            //avant de quitter un dernier commit
+           db.batchExec(MAXSIZE);
             System.out.println("Fin de l'intégration...");
             System.out.println("Nombre de lignes traitées : "+ compteur);
-            System.out.println("Nombre de lignes en erreur : "+compteurErr);
+            System.out.println("Nombre de lignes en erreur de lecture fichier : "+compteurErr);
             System.out.println("Nombre de lignes intégrées : "+(compteur-compteurErr));
             System.out.println("Durée: "+(System.currentTimeMillis()-debut)/1000+" secondes");
                    } catch (IOException ex) {
@@ -200,20 +230,25 @@ Telecopie=sc.next().replaceAll("\"", "").replaceAll("'", "''");
 Adresse_e_mail=sc.next().replaceAll("\"", "").replaceAll("'", "''");
 Adresse_BAL_MSSante=sc.next().replaceAll("\"", "").replaceAll("'", "''");
 insert_db();
-} catch (Exception e){System.out.println("erreur a la ligne : "+compteur);compteurErr++;}    
+} catch (Exception e){System.out.println("erreur de lecture a la ligne : "+compteur);compteurErr++;}    
 }
     }
+
     
-    public static void main(String[] args) {
-        if (args.length<1){
-            System.out.println("syntaxe : rppsImport fichier_import_csv");
+    public void help(){
+          System.out.println("syntaxe : rppsImport fichier_import_csv [Batch_Size]");
             System.out.println("'fichier_import_csv' à récuperer sur le site :");
             System.out.println("https://annuaire.sante.fr/web/site-pro/extractions-publiques");
             System.out.println("NB: Ne pas modifier le format du fichier...");
+            System.out.println("Batch_size= [optionnel] nb update par transaction/commit valeur par defaut 1000");
             System.exit(0);
-        }
+    }
+    
+    
+    
+    public static void main(String[] args) {
        
-        RppsImport rppsImport = new RppsImport(args[0]);
+        RppsImport rppsImport = new RppsImport(args);
     }
 
     private void insert_db() {
@@ -304,11 +339,17 @@ insert_db();
        db.updateBatch(sql);
     }
 
+    
+    /************************
+     *  procedure de validation 
+     * du truncate de la table
+     **************************/
     private void YesNo() {
         System.out.print("L'application va réaliser un truncate de la table RPPS, voulez vous continuer (o/n)? ");
         Scanner sc=new Scanner(System.in);
         String reponse=sc.nextLine();
         if (reponse.compareToIgnoreCase("n")==0){
+            System.out.println("OK, on s'arrete la sur la procédure d'import dans ce cas...");
             System.exit(1);
         }
     }
